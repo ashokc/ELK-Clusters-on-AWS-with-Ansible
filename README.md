@@ -31,7 +31,7 @@ Provision the ELK software with:
 1. Generate logs on a filebeat host. Replace xxx.xxx.xxx.xxx below with the actual IP address of this host
 
 ```
-scp -i ~/.ssh/ELK_KEY_PAIR.pem ./genLogs.pl ubuntu@xxx.xxx.xxx.xxx:/home/ubuntugenLogs.pl
+scp -i ~/.ssh/ELK_KEY_PAIR.pem ./genLogs.pl ubuntu@xxx.xxx.xxx.xxx:/home/ubuntu/genLogs.pl
 ssh -i ~/.ssh/ELK_KEY_PAIR.pem xxx.xxx.xxx.xxx -l ubuntu
 ./genLogs.pl
 ````
