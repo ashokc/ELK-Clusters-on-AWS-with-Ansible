@@ -1,4 +1,4 @@
-# ELK-Clusters-on-AWS-with-Ansible
+# ELK Clusters on AWS with Ansible
 
 This is the source code to along with the blog article [ELK Clusters on AWS with Ansible](http://xplordat.com/2017/12/12/elk-stack-with-vagrant-and-ansible/)
 
