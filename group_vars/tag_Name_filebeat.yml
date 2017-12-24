@@ -1,0 +1,6 @@
+filebeat_version: "{{ elk_version }}"
+filebeat_user: filebeatUser
+filebeat_group: filebeatGroup
+filebeat_enabled_on_boot: yes
+logstashHostsList: "{% for host in groups['tag_Name_logstash'] %} {{hostvars[host]['ec2_private_ip_address'] }}:{{filebeat_2_logstash_port}}{% endfor %}"
+filebeat_logstash_hosts: "{{ logstashHostsList.split() }}"

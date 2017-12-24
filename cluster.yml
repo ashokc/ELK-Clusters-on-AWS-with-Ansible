@@ -1,0 +1,41 @@
+awsHosts:
+  master-nodes:
+    instance_type: t2.small # 1 cpu & 2gb ram
+    exact_count: 1  # Makes sure that there will only be one Master node
+    instance_tags:
+      Name: esMaster
+    count_tag:
+      Name: esMaster
+
+  data-nodes:
+    instance_type: t2.medium  # 2 cpus & 4gb ram
+    exact_count: 2  # Makes sure that there will be exactly 2 hosts with the tag 'esData'
+    instance_tags:
+      Name: esData  # Allows us to refer to all data nodes via "tag_Name_esData" later on
+    count_tag:
+      Name: esData
+
+  logstash-nodes:
+    instance_type: t2.small
+    exact_count: 1
+    instance_tags:
+      Name: logstash
+    count_tag:
+      Name: logstash
+
+  kibana-nodes:
+    instance_type: t2.micro # 1 cpu & 1gb ram
+    exact_count: 1
+    instance_tags:
+      Name: kibana
+    count_tag:
+      Name: kibana
+
+  filebeat-nodes:
+    instance_type: t2.micro
+    exact_count: 2
+    instance_tags:
+      Name: filebeat
+    count_tag:
+      Name: filebeat
+

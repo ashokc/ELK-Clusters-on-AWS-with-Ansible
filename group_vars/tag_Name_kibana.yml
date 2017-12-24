@@ -1,0 +1,8 @@
+kibana_version: "{{ elk_version }}"
+kibana_user: kibanaUser
+kibana_group: kibanaGroup
+kibana_enabled_on_boot: yes
+kibana_server_host: 0.0.0.0
+kibana_elasticsearch_url : http://{{hostvars[groups['tag_Name_esMaster'][0]]['ec2_private_ip_address'] }}:{{cluster_http_port}}
+kibana_instance: "{{kibana_server_port}}"
+

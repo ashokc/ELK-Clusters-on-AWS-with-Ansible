@@ -1,0 +1,109 @@
+# ELK setup on AWS
+
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars: # variables with
+    - region: us-west-2
+    - image: ami-b9ff39d9 # ubuntu xenial
+    - cidr: 172.17.0.0/16 # allows for over 65000 hosts
+    - local_ip: 70.95.79.18     # Replace with the IP address of the ansible host
+
+  vars_files:
+    - aws-secrets.yml   # api credentials best protected by ansible-vault
+    - cluster.yml # details of the cluster hosts, counts, tags
+
+  tasks:
+    - name: Set up VPC for ELK
+      ec2_vpc_net:
+        name: ELK_VPC
+        cidr_block: "{{cidr}}"
+        region: "{{region}}"
+        tags:
+          Name: ELK non-default VPC
+      register: elkVpc
+
+    - name: Set up an Internet Gateway for this non-Default VPC
+      ec2_vpc_igw:
+        vpc_id: "{{elkVpc.vpc.id}}"
+        region: "{{region}}"
+        state: present
+        tags:
+          Name: ELK internet gateway
+      register: elkIgw
+
+    - name: Create a subnet for ELK within this VPC
+      ec2_vpc_subnet:
+        state: present
+        vpc_id: "{{elkVpc.vpc.id}}"
+        cidr: "{{cidr}}"
+        map_public: yes
+        tags:
+          Name: ELK public subnet
+      register: elkSubnet
+
+    - name: Set up routing for the subnet
+      ec2_vpc_route_table:
+        vpc_id: "{{elkVpc.vpc.id}}"
+        region: "{{region}}"
+        tags:
+          Name: ELK route table
+        subnets:
+          - "{{ elkSubnet.subnet.id }}"
+        routes:
+        - dest: 0.0.0.0/0
+          gateway_id: "{{ elkIgw.gateway_id }}"
+      register: public_route_table
+
+    - name: Set up Security Group for ELK
+      ec2_group:
+        name: ELK_Security_Group
+        description: A security group to be used with ELK stack
+        vpc_id: "{{elkVpc.vpc.id}}"
+        region: "{{region}}"
+        aws_access_key: "{{aws_access_key}}"    # from aws-secrets.yml
+        aws_secret_key: "{{aws_secret_key}}"    # from aws-secrets.yml
+        tags:
+          app_group: ELK
+        rules:
+          - proto: tcp
+            ports:
+              - 22
+              - 5601
+            cidr_ip: "{{local_ip}}/32"  # ports 22, and 5601 are allowed ONLY from this ansible host
+          - proto: all
+            group_name: ELK_Security_Group  # allow all communication across the cluster hosts
+        rules_egress:
+          - proto: all
+            cidr_ip: 0.0.0.0/0
+      register: elkSg
+
+    - name: Set up an ELK key 
+      ec2_key:  # The key-pair used for ssh access to these hosts
+        name: "{{key_pair}}"
+        region: "{{region}}"
+      register: elkKey
+
+    - name: Save the private key
+      copy:
+        content: "{{ elkKey.key.private_key }}"
+        dest: "~/.ssh/{{key_pair}}.pem" # save the private key
+        mode: 0600
+      when: elkKey.changed
+
+    - name: Provision a set of instances
+      ec2:    # Iterate over the dictionary read from the "cluster.yml" file
+        aws_access_key: "{{aws_access_key}}"
+        aws_secret_key: "{{aws_secret_key}}"
+        key_name: "{{key_pair}}"
+        vpc_subnet_id: "{{elkSubnet.subnet.id}}"
+        group_id: "{{elkSg.group_id}}"
+        region: "{{region}}"
+        instance_type: "{{item.value.instance_type}}"
+        image: "{{image}}"
+        wait: true
+        exact_count: "{{item.value.exact_count}}"
+        instance_tags: "{{item.value.instance_tags}}"
+        count_tag: "{{item.value.count_tag}}"
+      with_dict: "{{awsHosts}}"

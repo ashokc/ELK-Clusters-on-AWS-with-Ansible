@@ -1,0 +1,45 @@
+- hosts: security_group_ELK_Security_Group  # a group of all hosts in the cluster
+  name: Run a pre_task on all hosts to insyall python
+  user: ubuntu
+  gather_facts: False # Cannot gather facts until pre_tasks are done
+
+  pre_tasks:
+
+    - name: apt update on ubuntu
+      raw: sudo apt-get -y update
+      ignore_errors: true
+
+    - name: install python2 on ubuntu
+      raw: sudo apt-get -y install python-simplejson
+      ignore_errors: true
+      notify: Gather facts now  # can gather facts now via a handler
+
+  handlers:
+    - name: Gather facts now
+      setup:
+
+- hosts: tag_Name_esMaster  # group of all ES master nodes
+  become: true
+  roles:
+    - { role: elastic.elasticsearch, cluster_http_port: 9201, cluster_transport_tcp_port: 9301}
+
+- hosts: tag_Name_esData  # group of all ES data nodes
+  become: true
+  roles:
+    - { role: elastic.elasticsearch, cluster_http_port: 9201, cluster_transport_tcp_port: 9301}
+
+- hosts: tag_Name_kibana  # group of all kibana nodes
+  become: true
+  roles:
+    - { role: ashokc.kibana, kibana_server_port: 5601, cluster_http_port: 9201 }
+
+- hosts: tag_Name_logstash  # group of all logstash nodes
+  become: true
+  roles:
+    - { role: ashokc.logstash, cluster_http_port: 9201, filebeat_2_logstash_port: 5044 }
+
+- hosts: tag_Name_filebeat  # group of all (application) nodes with filebeat
+  become: true
+  roles:
+    - {role: ashokc.filebeat, filebeat_2_logstash_port: 5044 }
+
